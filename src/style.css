@@ -1,0 +1,202 @@
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2)
+    format("woff2");
+}
+
+@font-face {
+  font-family: "TT Firs Neue";
+  src: url("TT-Firs-Neue.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", sans-serif;
+  background: url("back.png") no-repeat center top #efefef;
+  color: #373532;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+h1 {
+  font-family: "TT Firs Neue", sans-serif;
+  font-size: 2.825rem;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+a {
+  color: currentColor;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+/* Forms */
+
+label {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+input,
+select {
+  font-size: 1.125rem;
+  padding-inline: 0.625rem;
+  height: 2.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  border: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+input[type="file"] {
+  padding-left: 0;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 3.125rem;
+  background: #fff url("arrow.png") no-repeat right 0 center / 2.5rem;
+}
+
+button,
+input[type="file"]::file-selector-button {
+  width: fit-content;
+  padding: 0.4375rem 2.0625rem;
+  font-family: "TT Firs Neue", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #ccff01 0%, #bfe136 100%);
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  border: none;
+}
+
+input[type="file"]::file-selector-button {
+  text-transform: lowercase;
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6875rem;
+}
+
+.error {
+  color: #cf2e2e;
+}
+
+/* Other */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.header {
+  padding: 3.125rem 0 0;
+}
+
+.padded {
+  padding: 0 1.25rem;
+}
+
+.container {
+  padding-block: 1.5625rem;
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+}
+
+.container-rtmr {
+  border-top: 1px solid #546d6b;
+  padding-top: 2.5rem;
+}
+
+.column {
+  flex: 1 1 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.log-tag {
+  border: 1px solid #373532;
+  padding: 0.1875rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+/* Hash */
+
+.hash-list {
+  margin: 0;
+  list-style-type: none;
+  counter-reset: index -1;
+  padding: 0;
+}
+
+.hash-list > li {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 0.375rem;
+}
+
+.hash-list > li::before {
+  counter-increment: index;
+  content: counter(index);
+  font-weight: 700;
+  color: #333;
+  display: inline-block;
+  width: 1rem;
+}
+
+.hash {
+  word-break: break-all;
+  font-family: monospace;
+  width: 48ch;
+  font-size: 0.875rem;
+}
