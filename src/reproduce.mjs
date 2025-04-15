@@ -244,17 +244,13 @@ async function reproduceEvents(td) {
   const linuxSection = kernelPe.sections.find((x) => x.name === ".linux\0\0");
   const isUki = Boolean(linuxSection);
 
-  try {
-    await addEvent(
-      isUki ? "Linux unified kernel image" : "Linux kernel",
-      "EV_EFI_BOOT_SERVICES_APPLICATION",
-      1,
-      {},
-      getPeHashPreimage(td.software.kernel)
-    );
-  } catch (e) {
-    throw new TdKernelError(e.message);
-  }
+  await addEvent(
+    isUki ? "Linux unified kernel image" : "Linux kernel",
+    "EV_EFI_BOOT_SERVICES_APPLICATION",
+    1,
+    {},
+    getPeHashPreimage(td.software.kernel)
+  );
 
   await addEvent(
     "BootOrder boot variable",
@@ -281,18 +277,14 @@ async function reproduceEvents(td) {
   await addEvent("Separator", "EV_SEPARATOR", 0, {}, new Uint8Array(4));
 
   if (linuxSection) {
-    try {
-      await addEvent(
-        "Linux kernel",
-        "EV_EFI_BOOT_SERVICES_APPLICATION",
+    await addEvent(
+      "Linux kernel",
+      "EV_EFI_BOOT_SERVICES_APPLICATION",
 
-        1,
-        {},
-        getPeHashPreimage(linuxSection.body)
-      );
-    } catch (e) {
-      throw new TdKernelError(e.message);
-    }
+      1,
+      {},
+      getPeHashPreimage(linuxSection.body)
+    );
   }
 
   let initrd = null;
@@ -577,36 +569,6 @@ function serializeAddChecksum(filename, offset, start, length) {
   return result;
 }
 
-class TdFirmwareError extends Error {
-  /**
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-}
-
-class TdKernelError extends Error {
-  /**
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-}
-
-class TdInitrdError extends Error {
-  /**
-   * @param {string} message
-   */
-  constructor(message) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-}
-
 // ------------------------------------------------------------------------------
 // HOB
 // ------------------------------------------------------------------------------
@@ -631,7 +593,7 @@ function getHobHashPreimage(tdxMetadataSections, totalMemoryBytes) {
     (section) => section.sectionType === "TD_HOB"
   );
   if (!hobSection) {
-    throw new TdFirmwareError("TD_HOB section not found");
+    throw new Error("TD_HOB section not found");
   }
 
   const sortedSections = tdxMetadataSections
@@ -732,7 +694,7 @@ function getTdxMetadataSections(firmware) {
   const footerOffset = firmware.length - 0x30;
   const footerGuid = bytesToUuid(firmware.subarray(footerOffset));
   if (footerGuid !== "96b582de-1fb2-45f7-baea-a366c55a082d") {
-    throw new TdFirmwareError("Wrong table footer guid");
+    throw new Error("Wrong table footer guid");
   }
 
   return parseTdxMetadataSections(
@@ -746,11 +708,11 @@ function getTdxMetadataSections(firmware) {
  */
 function parseTdxMetadataSections(metadataTable) {
   if (metadataTable.length < 32) {
-    throw new TdFirmwareError("Data too short for TdxMetadata header");
+    throw new Error("Data too short for TdxMetadata header");
   }
 
   if (bytesToUuid(metadataTable) !== "e9eaf9f3-168e-44d5-a8eb-7f4d8738f6ae") {
-    throw new TdFirmwareError("Wrong metadata guid");
+    throw new Error("Wrong metadata guid");
   }
 
   const view = new DataView(
@@ -761,11 +723,11 @@ function parseTdxMetadataSections(metadataTable) {
 
   const signature = utf8decoder.decode(metadataTable.subarray(16, 20));
   if (signature !== "TDVF") {
-    throw new TdFirmwareError(`Invalid signature: ${signature}`);
+    throw new Error(`Invalid signature: ${signature}`);
   }
   const version = view.getUint32(24, LE);
   if (version !== 1) {
-    throw new TdFirmwareError(`Unsupported version: ${version}`);
+    throw new Error(`Unsupported version: ${version}`);
   }
 
   const sectionCount = view.getUint32(28, LE);
@@ -777,7 +739,7 @@ function parseTdxMetadataSections(metadataTable) {
   let offset = 32;
   for (let i = 0; i < sectionCount; i++) {
     if (offset + sectionSize > metadataTable.length) {
-      throw new TdFirmwareError(`Not enough data for section ${i}`);
+      throw new Error(`Not enough data for section ${i}`);
     }
     const rawOffset = view.getUint32(offset, LE);
     const rawSize = view.getUint32(offset + 4, LE);
@@ -788,9 +750,7 @@ function parseTdxMetadataSections(metadataTable) {
 
     const sectionType = TDX_METADATA_SECTION_TYPES[sectionTypeIndex];
     if (sectionType === undefined) {
-      throw new TdFirmwareError(
-        `Invalid section type index: ${sectionTypeIndex}`
-      );
+      throw new Error(`Invalid section type index: ${sectionTypeIndex}`);
     }
     sections.push({
       rawOffset,
@@ -824,7 +784,7 @@ function getTdxMetadataOffset(image) {
     const entryLength = view.getUint16(offset - 16 - 2, LE);
     offset -= entryLength;
   }
-  throw new TdFirmwareError("TDX metadata offset not found");
+  throw new Error("TDX metadata offset not found");
 }
 
 // ------------------------------------------------------------------------------
@@ -896,12 +856,12 @@ function qemuPatchKernel(software, totalMemoryBytes) {
 
   if (software.initrd) {
     if (protocol < 0x200) {
-      throw new TdInitrdError(
+      throw new Error(
         "RAM disk is already in kernel image or kernel is too old"
       );
     }
     if (software.initrd.length >= initrdMax) {
-      throw new TdInitrdError("RAM disk is too large");
+      throw new Error("RAM disk is too large");
     }
     const initrdAddr = (initrdMax - software.initrd.length) & ~4095;
     view.setUint32(0x218, initrdAddr, LE);

@@ -1,0 +1,39 @@
+export default [
+  {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: "module",
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        console: "readonly",
+      },
+    },
+    rules: {
+      "no-debugger": "error",
+      "no-undef-init": "error",
+      "no-unused-vars": [
+        "warn",
+        { vars: "all", args: "after-used", ignoreRestSiblings: true },
+      ],
+      eqeqeq: ["error", "always"],
+      curly: ["error", "all"],
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-return-assign": ["error", "always"],
+      "no-alert": "warn",
+      "no-shadow": "warn",
+      quotes: ["error", "double", { avoidEscape: true }],
+      semi: ["error", "always"],
+      "comma-dangle": ["error", "only-multiline"],
+      "no-trailing-spaces": "error",
+      "space-before-blocks": ["error", "always"],
+      "keyword-spacing": ["error", { before: true, after: true }],
+      "space-infix-ops": "error",
+      "arrow-spacing": ["error", { before: true, after: true }],
+      "max-depth": ["warn", 4],
+      "max-params": ["warn", 4],
+    },
+  },
+];

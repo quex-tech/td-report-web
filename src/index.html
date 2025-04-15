@@ -17,9 +17,8 @@
       <div class="column">
         <div class="section">
           <h2>Firmware</h2>
-          <div class="error" id="firmware-error" style="display: none"></div>
           <div class="field" id="firmware-file-field">
-            <input type="file" id="firmware-file" />
+            <input type="file" id="firmware-file" accept=".fd" />
           </div>
         </div>
       </div>
@@ -27,7 +26,10 @@
         <div class="section">
           <h2>MRTD</h2>
           <div class="hash" style="display: none" id="mrtd"></div>
-          <div id="mrtd-none">Choose firmware to calculate MRTD.</div>
+          <div id="mrtd-none" style="display: none">
+            Choose firmware to calculate MRTD.
+          </div>
+          <div class="error" id="mrtd-error" style="display: none"></div>
         </div>
       </div>
     </div>
@@ -44,8 +46,19 @@
               step="256"
               value="2048"
               id="ram"
-              value="32"
+              list="ram-values"
             />
+            <datalist id="ram-values">
+              <option value="256"></option>
+              <option value="512"></option>
+              <option value="1024"></option>
+              <option value="2048"></option>
+              <option value="3072"></option>
+              <option value="4096"></option>
+              <option value="8192"></option>
+              <option value="16384"></option>
+              <option value="32768"></option>
+            </datalist>
           </div>
           <div class="field">
             <label for="hardware-configuration">Configuration</label>
@@ -62,12 +75,12 @@
             <ul>
               <li>
                 <a id="download-acpi-tables" href="/acpi/2c-nic.bin" download
-                  >ACPI tables</a
+                  >↓ QEMU ACPI tables file</a
                 >
               </li>
               <li>
                 <a id="download-libvirt-xml" href="/acpi/2c-nic.xml" download
-                  >Example libvirt domain XML</a
+                  >↓ Example libvirt domain XML file</a
                 >
               </li>
             </ul>
@@ -79,7 +92,6 @@
         </div>
         <div class="section">
           <h2>Software</h2>
-          <div class="error" id="software-error" style="display: none"></div>
           <div class="field">
             <label for="payload-type">Payload type</label>
             <select id="payload-type">
@@ -91,7 +103,7 @@
           </div>
           <div class="field" id="uki-field">
             <label for="kernel">Unified kernel image</label>
-            <input type="file" id="uki" />
+            <input type="file" id="uki" accept=".efi,.uki" />
           </div>
           <div class="field" style="display: none" id="kernel-field">
             <label for="kernel">Kernel</label>
@@ -99,7 +111,11 @@
           </div>
           <div class="field" style="display: none" id="initrd-field">
             <label for="initrd">Initial ramdisk</label>
-            <input type="file" id="initrd" />
+            <input
+              type="file"
+              id="initrd"
+              accept=".img,.gz,.xz,.lz4,.bz2,.zst,.cpio"
+            />
           </div>
           <div class="field" style="display: none" id="cmdline-field">
             <label for="cmdline">Kernel command-line parameters</label>
@@ -110,14 +126,15 @@
       <div class="column">
         <div class="section">
           <h2>RTMR</h2>
-          <div id="rtmr-none">
+          <div id="rtmr-none" style="display: none">
             Choose firmware, hardware, and software to calculate RTMR.
           </div>
+          <div class="error" id="rtmr-error" style="display: none"></div>
           <ol class="hash-list" style="display: none" id="rtmr-registers"></ol>
         </div>
         <div class="section" style="display: none" id="rtmr-events"></div>
       </div>
     </div>
-    <script src="main.mjs" type="module"></script>
+    <script src="app.mjs" type="module"></script>
   </body>
 </html>
