@@ -12,6 +12,7 @@ export default [
     },
     rules: {
       "no-debugger": "error",
+      "no-console": "warn",
       "no-undef-init": "error",
       "no-unused-vars": [
         "warn",

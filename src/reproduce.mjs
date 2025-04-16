@@ -133,10 +133,9 @@ async function reproduceEvents(td) {
     });
   }
 
-  const hob = getHobHashPreimage(
-    td.firmware.tdxMetadataSections,
-    td.hardware.totalMemoryBytes
-  );
+  const memoryLayout = getMemoryLayout(td.hardware.totalMemoryBytes);
+
+  const hob = getHobHashPreimage(td.firmware.tdxMetadataSections, memoryLayout);
 
   await addEvent(
     "TD Hand-Off Block (HOB)",
@@ -238,7 +237,7 @@ async function reproduceEvents(td) {
     td.hardware.acpiTables
   );
 
-  qemuPatchKernel(td.software, td.hardware.totalMemoryBytes);
+  qemuPatchKernel(td.software, memoryLayout);
 
   const kernelPe = parsePe(td.software.kernel);
   const linuxSection = kernelPe.sections.find((x) => x.name === ".linux\0\0");
@@ -579,10 +578,10 @@ const HOB_END_SIZE = 8;
 
 /**
  * @param {TdxMetadataSection[]} tdxMetadataSections
- * @param {number} totalMemoryBytes
+ * @param {TdMemoryLayout} memoryLayout
  * @returns {Uint8Array}
  */
-function getHobHashPreimage(tdxMetadataSections, totalMemoryBytes) {
+function getHobHashPreimage(tdxMetadataSections, memoryLayout) {
   let memOffset = 0;
   /**
    * @type {[number, number, number][]}
@@ -610,8 +609,15 @@ function getHobHashPreimage(tdxMetadataSections, totalMemoryBytes) {
     entries.push([section.memBase, section.memBase + section.memSize, 1]);
     memOffset = section.memBase + section.memSize;
   }
-  if (memOffset < totalMemoryBytes) {
-    entries.push([memOffset, totalMemoryBytes, 0]);
+  if (memOffset < memoryLayout.below4gMemSize) {
+    entries.push([memOffset, memoryLayout.below4gMemSize, 0]);
+  }
+  if (memoryLayout.above4gMemSize > 0) {
+    entries.push([
+      memoryLayout.above4gMemStart,
+      memoryLayout.above4gMemStart + memoryLayout.above4gMemSize,
+      0,
+    ]);
   }
 
   const hob = new Uint8Array(hobSection.memSize);
@@ -795,20 +801,16 @@ const ACPI_DATA_SIZE = 0x20000 + 0x8000;
 
 /**
  * @param {TdSoftware} software
- * @param {number} totalMemoryBytes
+ * @param {TdMemoryLayout} memoryLayout
  */
-function qemuPatchKernel(software, totalMemoryBytes) {
+function qemuPatchKernel(software, memoryLayout) {
   const kernel = software.kernel;
   const view = new DataView(
     kernel.buffer,
     kernel.byteOffset,
     kernel.byteLength
   );
-  const ramSize = totalMemoryBytes;
   const cmdlineSize = ((software.cmdline || "").length + 16) & ~15;
-
-  const lowmem = ramSize >= 0xb0000000 ? 0x80000000 : 0xb0000000;
-  const below4gMemSize = ramSize >= lowmem ? lowmem : ramSize;
 
   const magic = utf8decoder.decode(kernel.subarray(0x202, 0x206));
   let protocol = 0;
@@ -834,8 +836,8 @@ function qemuPatchKernel(software, totalMemoryBytes) {
     initrdMax = 0x37ffffff;
   }
 
-  if (initrdMax >= below4gMemSize - ACPI_DATA_SIZE) {
-    initrdMax = below4gMemSize - ACPI_DATA_SIZE - 1;
+  if (initrdMax >= memoryLayout.below4gMemSize - ACPI_DATA_SIZE) {
+    initrdMax = memoryLayout.below4gMemSize - ACPI_DATA_SIZE - 1;
   }
 
   if (protocol >= 0x202) {
@@ -867,6 +869,37 @@ function qemuPatchKernel(software, totalMemoryBytes) {
     view.setUint32(0x218, initrdAddr, LE);
     view.setUint32(0x21c, software.initrd.length, LE);
   }
+}
+
+// ------------------------------------------------------------------------------
+// Memory layout
+// ------------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} TdMemoryLayout
+ * @property {number} below4gMemSize
+ * @property {number} above4gMemSize
+ * @property {number} above4gMemStart
+ */
+
+/**
+ * @param {number} totalMemoryBytes
+ * @returns {TdMemoryLayout}
+ */
+function getMemoryLayout(totalMemoryBytes) {
+  const lowmem = totalMemoryBytes >= 0xb0000000 ? 0x80000000 : 0xb0000000;
+  if (totalMemoryBytes >= lowmem) {
+    return {
+      below4gMemSize: lowmem,
+      above4gMemSize: totalMemoryBytes - lowmem,
+      above4gMemStart: 0x100000000,
+    };
+  }
+  return {
+    below4gMemSize: totalMemoryBytes,
+    above4gMemSize: 0,
+    above4gMemStart: 0x100000000,
+  };
 }
 
 // ------------------------------------------------------------------------------
