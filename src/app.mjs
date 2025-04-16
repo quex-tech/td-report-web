@@ -38,6 +38,9 @@ const firmwareModel = {
 
 const hardwareView = {
   ram: /** @type {HTMLInputElement} */ (document.getElementById("ram")),
+  ramBlock: /** @type {HTMLInputElement} */ (
+    document.getElementById("ram-field")
+  ),
   configuration: /** @type {HTMLSelectElement} */ (
     document.getElementById("hardware-configuration")
   ),
@@ -64,12 +67,19 @@ const hardwareView = {
     }
     toggle(this.acpiTablesBlock, model.isCustom);
     toggle(this.downloadHardwareFiles, !model.isCustom);
+    toggle(this.ramBlock, model.isCustom);
   },
 };
 
 /** @type {HardwareModel} */
 const hardwareModel = {
-  ramMb: parseInt(hardwareView.ram.value),
+  ramMb: parseInt(
+    hardwareView.configuration.value === "custom"
+      ? hardwareView.ram.value
+      : hardwareView.configuration.options[
+          hardwareView.configuration.selectedIndex
+        ].attributes["data-ram"].value
+  ),
   configuration: hardwareView.configuration.value,
   acpiTables: hardwareView.acpiTables.files?.[0],
   get isCustom() {
@@ -258,13 +268,22 @@ firmwareView.file.addEventListener("change", () => {
 });
 
 hardwareView.ram.addEventListener("change", () => {
-  hardwareModel.ramMb = parseInt(hardwareView.ram.value);
+  if (hardwareModel.isCustom) {
+    hardwareModel.ramMb = parseInt(hardwareView.ram.value);
+  }
   render();
   updateRtmr();
 });
 
 hardwareView.configuration.addEventListener("change", () => {
   hardwareModel.configuration = hardwareView.configuration.value;
+  hardwareModel.ramMb = parseInt(
+    hardwareModel.isCustom
+      ? hardwareView.ram.value
+      : hardwareView.configuration.options[
+          hardwareView.configuration.selectedIndex
+        ].attributes["data-ram"].value
+  );
   render();
   updateRtmr();
 });

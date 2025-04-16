@@ -38,6 +38,39 @@
         <div class="section">
           <h2>Hardware</h2>
           <div class="field">
+            <label for="hardware-configuration">Configuration</label>
+            <select id="hardware-configuration">
+              <option value="2c-2g-nic" data-ram="2048">
+                2 CPU cores, 2 GiB RAM, NIC
+              </option>
+              <option value="4c-2g-nic" data-ram="2048">
+                4 CPU cores, 2 GiB RAM, NIC
+              </option>
+              <option value="8c-2g-nic" data-ram="2048">
+                8 CPU cores, 2 GiB RAM, NIC
+              </option>
+              <option value="16c-2g-nic" data-ram="2048">
+                16 CPU cores, 2 GiB RAM, NIC
+              </option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div id="download-hardware-files">
+            Download:
+            <ul>
+              <li>
+                <a id="download-acpi-tables" href="/acpi/2c-nic.bin" download
+                  >↓ QEMU ACPI tables file</a
+                >
+              </li>
+              <li>
+                <a id="download-libvirt-xml" href="/acpi/2c-nic.xml" download
+                  >↓ Example libvirt domain XML file</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="field" id="ram-field" style="display: none;">
             <label for="ram">RAM, MiB</label>
             <input
               type="number"
@@ -59,31 +92,6 @@
               <option value="16384"></option>
               <option value="32768"></option>
             </datalist>
-          </div>
-          <div class="field">
-            <label for="hardware-configuration">Configuration</label>
-            <select id="hardware-configuration">
-              <option value="2c-nic">2 CPU cores, NIC</option>
-              <option value="4c-nic">4 CPU cores, NIC</option>
-              <option value="8c-nic">8 CPU cores, NIC</option>
-              <option value="16c-nic">16 CPU cores, NIC</option>
-              <option value="custom">Custom</option>
-            </select>
-          </div>
-          <div id="download-hardware-files">
-            Download:
-            <ul>
-              <li>
-                <a id="download-acpi-tables" href="/acpi/2c-nic.bin" download
-                  >↓ QEMU ACPI tables file</a
-                >
-              </li>
-              <li>
-                <a id="download-libvirt-xml" href="/acpi/2c-nic.xml" download
-                  >↓ Example libvirt domain XML file</a
-                >
-              </li>
-            </ul>
           </div>
           <div class="field" id="acpi-field" style="display: none">
             <label for="acpi">QEMU ACPI tables file</label>
