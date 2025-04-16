@@ -31,6 +31,7 @@ const firmwareModel = {
  * @property {number|undefined} ramMb
  * @property {string} configuration
  * @property {File|undefined} acpiTables
+ * @property {string} acpiTablesId
  * @property {boolean} isCustom
  * @property {boolean} isFilled
  * @property {() => Promise<ArrayBuffer|undefined>} getAcpiTables
@@ -44,6 +45,11 @@ const hardwareView = {
   configuration: /** @type {HTMLSelectElement} */ (
     document.getElementById("hardware-configuration")
   ),
+  get selectedConfigurationOption() {
+    return hardwareView.configuration.options[
+      hardwareView.configuration.selectedIndex
+    ];
+  },
   acpiTables: /** @type {HTMLInputElement} */ (document.getElementById("acpi")),
   acpiTablesBlock: /** @type {HTMLElement} */ (
     document.getElementById("acpi-field")
@@ -63,7 +69,7 @@ const hardwareView = {
   render: function (model) {
     if (!model.isCustom) {
       this.downloadAcpiTables.href = `/acpi/${model.configuration}.bin`;
-      this.downloadLibvirtXml.href = `/acpi/${model.configuration}.xml`;
+      this.downloadLibvirtXml.href = `/acpi/${model.acpiTablesId}.xml`;
     }
     toggle(this.acpiTablesBlock, model.isCustom);
     toggle(this.downloadHardwareFiles, !model.isCustom);
@@ -76,12 +82,15 @@ const hardwareModel = {
   ramMb: parseInt(
     hardwareView.configuration.value === "custom"
       ? hardwareView.ram.value
-      : hardwareView.configuration.options[
-          hardwareView.configuration.selectedIndex
-        ].attributes["data-ram"].value
+      : hardwareView.selectedConfigurationOption.attributes["data-ram"].value
   ),
   configuration: hardwareView.configuration.value,
   acpiTables: hardwareView.acpiTables.files?.[0],
+  acpiTablesId:
+    hardwareView.configuration.value === "custom"
+      ? "custom"
+      : hardwareView.selectedConfigurationOption.attributes["data-tables"]
+          .value,
   get isCustom() {
     return this.configuration === "custom";
   },
@@ -93,7 +102,10 @@ const hardwareModel = {
       return await this.acpiTables?.arrayBuffer();
     }
 
-    const response = await fetch(`/acpi/${this.configuration}.bin`);
+    const response = await fetch(`/acpi/${this.acpiTablesId}.bin`);
+    if (!response.ok) {
+      throw new Error("Could not get QEMU ACPI tables file");
+    }
     return await response.arrayBuffer();
   },
 };
@@ -284,6 +296,11 @@ hardwareView.configuration.addEventListener("change", () => {
           hardwareView.configuration.selectedIndex
         ].attributes["data-ram"].value
   );
+  hardwareModel.acpiTablesId = hardwareModel.isCustom
+    ? ""
+    : hardwareView.configuration.options[
+        hardwareView.configuration.selectedIndex
+      ].attributes["data-tables"].value;
   render();
   updateRtmr();
 });

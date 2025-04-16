@@ -40,23 +40,61 @@
           <div class="field">
             <label for="hardware-configuration">Configuration</label>
             <select id="hardware-configuration">
-              <option value="1c-1g-nic" data-ram="1024">
+              <option value="1c-1g-nic" data-ram="1024" data-tables="1c-1g-nic">
                 1 CPU core, 1 GiB RAM, NIC
               </option>
-              <option value="2c-2g-nic" data-ram="2048">
+              <option value="1c-2g-nic" data-ram="2048" data-tables="1c-nic">
+                1 CPU core, 2 GiB RAM, NIC
+              </option>
+              <option value="2c-2g-nic" data-ram="2048" data-tables="2c-nic">
                 2 CPU cores, 2 GiB RAM, NIC
               </option>
-              <option value="2c-4g-nic" data-ram="4096">
+              <option value="2c-4g-nic" data-ram="4096" data-tables="2c-nic">
                 2 CPU cores, 4 GiB RAM, NIC
               </option>
-              <option value="4c-2g-nic" data-ram="2048">
+              <option value="4c-2g-nic" data-ram="2048" data-tables="4c-nic">
                 4 CPU cores, 2 GiB RAM, NIC
               </option>
-              <option value="8c-2g-nic" data-ram="2048">
+              <option value="4c-4g-nic" data-ram="4096" data-tables="4c-nic">
+                4 CPU cores, 4 GiB RAM, NIC
+              </option>
+              <option value="4c-4g-nic" data-ram="8192" data-tables="4c-nic">
+                4 CPU cores, 8 GiB RAM, NIC
+              </option>
+              <option value="8c-2g-nic" data-ram="2048" data-tables="8c-nic">
                 8 CPU cores, 2 GiB RAM, NIC
               </option>
-              <option value="16c-2g-nic" data-ram="2048">
+              <option value="8c-4g-nic" data-ram="4096" data-tables="8c-nic">
+                8 CPU cores, 4 GiB RAM, NIC
+              </option>
+              <option value="8c-8g-nic" data-ram="8192" data-tables="8c-nic">
+                8 CPU cores, 8 GiB RAM, NIC
+              </option>
+              <option value="8c-16g-nic" data-ram="16384" data-tables="8c-nic">
+                8 CPU cores, 16 GiB RAM, NIC
+              </option>
+              <option value="16c-2g-nic" data-ram="2048" data-tables="16c-nic">
                 16 CPU cores, 2 GiB RAM, NIC
+              </option>
+              <option value="16c-4g-nic" data-ram="4096" data-tables="16c-nic">
+                16 CPU cores, 4 GiB RAM, NIC
+              </option>
+              <option value="16c-8g-nic" data-ram="8192" data-tables="16c-nic">
+                16 CPU cores, 8 GiB RAM, NIC
+              </option>
+              <option
+                value="16c-16g-nic"
+                data-ram="16384"
+                data-tables="16c-nic"
+              >
+                16 CPU cores, 16 GiB RAM, NIC
+              </option>
+              <option
+                value="16c-32g-nic"
+                data-ram="32768"
+                data-tables="16c-nic"
+              >
+                16 CPU cores, 32 GiB RAM, NIC
               </option>
               <option value="custom">Custom</option>
             </select>
@@ -76,7 +114,7 @@
               </li>
             </ul>
           </div>
-          <div class="field" id="ram-field" style="display: none;">
+          <div class="field" id="ram-field" style="display: none">
             <label for="ram">RAM, MiB</label>
             <input
               type="number"

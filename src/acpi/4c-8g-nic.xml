@@ -1,0 +1,55 @@
+<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <name>my-td</name>
+  <memory unit='GiB'>8</memory>
+  <memoryBacking>
+    <source type='anonymous'/>
+    <access mode='private'/>
+  </memoryBacking>
+  <vcpu placement='static'>4</vcpu>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <loader>/path/to/OVMF.fd</loader>
+    <kernel>/path/to/ukernel.efi</kernel>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <vmport state='off'/>
+    <ioapic driver='qemu'/>
+  </features>
+  <cpu mode='host-passthrough'>
+    <topology sockets='1' cores='4' threads='1'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='hpet' present='no'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <pm>
+    <suspend-to-mem enabled='no'/>
+    <suspend-to-disk enabled='no'/>
+  </pm>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <interface type='network'>
+      <source network='bridged-network' bridge='brquex0'/>
+      <model type='virtio'/>
+      <address type='pci' bus='0x00' slot='0x01'/>
+    </interface>
+    <controller type='usb' model='none'/>
+    <memballoon model='none'/>
+  </devices>
+  <launchSecurity type='tdx'>
+    <policy>0x10000000</policy>
+    <quoteGenerationService>
+      <SocketAddress type='vsock' cid='2' port='4050'/>
+    </quoteGenerationService>
+  </launchSecurity>
+  <qemu:commandline>
+    <qemu:arg value='-machine'/>
+    <qemu:arg value='pc-q35-8.2,usb=off,vmport=off,kernel_irqchip=split,dump-guest-core=off,memory-backend=pc.ram,confidential-guest-support=lsec0,hpet=off,i8042=off,smbus=off,sata=off'/>
+    <qemu:arg value='-global'/>
+    <qemu:arg value='ICH9-LPC.acpi-pci-hotplug-with-bridge-support=off'/>
+  </qemu:commandline>
+</domain>
