@@ -161,21 +161,28 @@ async function reproduceEvents(td) {
     }
   }
 
-  // todo: support Secure Boot
   await addEvent(
     "Secure boot mode",
     "EV_EFI_VARIABLE_DRIVER_CONFIG",
     0,
-    { name: "SecureBoot", alias: "EFI_SECURE_BOOT_MODE_NAME", value: "0" },
-    getEmptyDriverConfigVariable(GLOBAL_VAR_GUID, "SecureBoot")
+    { name: "SecureBoot", alias: "EFI_SECURE_BOOT_MODE_NAME" },
+    getDriverConfigVariable(
+      GLOBAL_VAR_GUID,
+      "SecureBoot",
+      getSecureBootVariableValue(td.firmware.efiVariables)
+    )
   );
 
   await addEvent(
     "Public platform key",
     "EV_EFI_VARIABLE_DRIVER_CONFIG",
     0,
-    { name: "PK", alias: "EFI_PLATFORM_KEY_NAME", value: "0" },
-    getEmptyDriverConfigVariable(GLOBAL_VAR_GUID, "PK")
+    { name: "PK", alias: "EFI_PLATFORM_KEY_NAME" },
+    getDriverConfigVariable(
+      GLOBAL_VAR_GUID,
+      "PK",
+      td.firmware.efiVariables.get("PK")
+    )
   );
 
   await addEvent(
@@ -185,9 +192,12 @@ async function reproduceEvents(td) {
     {
       name: "KEK",
       alias: "EFI_KEY_EXCHANGE_KEY_NAME",
-      value: "0",
     },
-    getEmptyDriverConfigVariable(GLOBAL_VAR_GUID, "KEK")
+    getDriverConfigVariable(
+      GLOBAL_VAR_GUID,
+      "KEK",
+      td.firmware.efiVariables.get("KEK")
+    )
   );
   await addEvent(
     "Authorized signature database",
@@ -196,9 +206,12 @@ async function reproduceEvents(td) {
     {
       name: "db",
       alias: "EFI_IMAGE_SECURITY_DATABASE",
-      value: "0",
     },
-    getEmptyDriverConfigVariable(SECURITY_DB_GUID, "db")
+    getDriverConfigVariable(
+      SECURITY_DB_GUID,
+      "db",
+      td.firmware.efiVariables.get("db")
+    )
   );
   await addEvent(
     "Forbidden signature database",
@@ -207,9 +220,12 @@ async function reproduceEvents(td) {
     {
       name: "dbx",
       alias: "EFI_IMAGE_SECURITY_DATABASE1",
-      value: "0",
     },
-    getEmptyDriverConfigVariable(SECURITY_DB_GUID, "dbx")
+    getDriverConfigVariable(
+      SECURITY_DB_GUID,
+      "dbx",
+      td.firmware.efiVariables.get("dbx")
+    )
   );
 
   await addEvent("Separator", "EV_SEPARATOR", 0, {}, new Uint8Array(4));
@@ -335,15 +351,34 @@ async function reproduceEvents(td) {
 }
 
 /**
- * @param {string} uuid
- * @param {string} name
+ * @param {Map<string,Uint8Array>} efiVariables
  * @returns {Uint8Array}
  */
-function getEmptyDriverConfigVariable(uuid, name) {
-  const bytes = new Uint8Array(16);
-  const view = new DataView(bytes.buffer);
-  view.setBigUint64(0, BigInt(name.length), LE);
-  return concatBytes([uuidToBytes(uuid), bytes, utf16LeEncoder.encode(name)]);
+function getSecureBootVariableValue(efiVariables) {
+  if (
+    efiVariables.has("PK") &&
+    (efiVariables.get("SecureBootEnable")?.[0] ?? 1) === 1
+  ) {
+    return new Uint8Array([1]);
+  }
+
+  return new Uint8Array();
+}
+
+/**
+ * @param {string} typeUuid
+ * @param {string} name
+ * @param {Uint8Array|undefined} data
+ * @returns {Uint8Array}
+ */
+function getDriverConfigVariable(typeUuid, name, data) {
+  data = data || new Uint8Array(0);
+  const firstBytes = new Uint8Array(32);
+  const view = new DataView(firstBytes.buffer);
+  firstBytes.set(uuidToBytes(typeUuid), 0);
+  view.setBigUint64(16, BigInt(name.length), LE);
+  view.setBigUint64(24, BigInt(data.length), LE);
+  return concatBytes([firstBytes, utf16LeEncoder.encode(name), data]);
 }
 
 /**
@@ -667,10 +702,13 @@ const TDX_METADATA_SECTION_TYPES = [
   "TD_PARAMS",
 ];
 
+const AUTH_VARS_GUID = "aaf32c78-947b-439a-a180-2e144ec37792";
+
 /**
  * @typedef {Object} TdFirmware
  * @property {Uint8Array} bytes
  * @property {TdxMetadataSection[]} tdxMetadataSections
+ * @property {Map<string,Uint8Array>} efiVariables
  */
 
 /**
@@ -689,7 +727,11 @@ const TDX_METADATA_SECTION_TYPES = [
  * @returns {TdFirmware}
  */
 export function parseFirmware(bytes) {
-  return { bytes, tdxMetadataSections: getTdxMetadataSections(bytes) };
+  return {
+    bytes,
+    tdxMetadataSections: getTdxMetadataSections(bytes),
+    efiVariables: parseEfiVariables(bytes),
+  };
 }
 
 /**
@@ -791,6 +833,64 @@ function getTdxMetadataOffset(image) {
     offset -= entryLength;
   }
   throw new Error("TDX metadata offset not found");
+}
+
+/**
+ * @param {Uint8Array} bytes  – the raw OVMF.fd bytes
+ * @returns {Map<string, Uint8Array>}  – map of EFI var name → its raw data
+ */
+function parseEfiVariables(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  let headerOffset = indexOfSubarray(bytes, uuidToBytes(AUTH_VARS_GUID));
+  if (headerOffset < 0) {
+    throw new Error("AuthVars guid not found");
+  }
+
+  const storeSize = view.getUint32(headerOffset + 16, true);
+  const format = view.getUint8(headerOffset + 20);
+  const storeState = view.getUint8(headerOffset + 21);
+  if (format !== 0x5a || storeState !== 0xfe) {
+    throw new Error(
+      `Unexpected varstore format/state: fmt=0x${format.toString(
+        16
+      )}, st=0x${storeState.toString(16)}`
+    );
+  }
+
+  const regionStart = headerOffset + 16 + 12;
+  const regionEnd = headerOffset + storeSize;
+
+  const vars = new Map();
+  let offset = regionStart;
+
+  while (offset + 44 <= regionEnd) {
+    const magic = view.getUint16(offset, LE);
+    if (magic !== 0x55aa) {
+      break;
+    }
+
+    const recordState = view.getUint8(offset + 2);
+    const nameSize = view.getUint32(offset + 36, LE);
+    const dataSize = view.getUint32(offset + 40, LE);
+
+    const nameOffset = offset + 44 + 16;
+    const nameBytes = bytes.subarray(nameOffset, nameOffset + nameSize);
+    const name = utf16LeDecoder.decode(nameBytes).slice(0, -1);
+
+    const dataOffset = nameOffset + nameSize;
+    if (dataOffset + dataSize > regionEnd) {
+      throw new Error("EFI variable overruns varstore boundary");
+    }
+    const data = bytes.slice(dataOffset, dataOffset + dataSize);
+
+    if (recordState === 0x3f) {
+      vars.set(name, data);
+    }
+
+    offset = (dataOffset + dataSize + 3) & ~3;
+  }
+  return vars;
 }
 
 // ------------------------------------------------------------------------------
@@ -1134,6 +1234,7 @@ class TextEncoderUtf16Le {
 
 const utf8decoder = new TextDecoder();
 const utf8encoder = new TextEncoder();
+const utf16LeDecoder = new TextDecoder("utf-16le");
 const utf16LeEncoder = new TextEncoderUtf16Le();
 
 /**
@@ -1206,4 +1307,30 @@ export function bytesToHex(bytes) {
   return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/**
+ * @param {Uint8Array} haystack
+ * @param {Uint8Array} needle
+ * @returns {number} starting index, or -1 if not found
+ */
+function indexOfSubarray(haystack, needle) {
+  const haystackLength = haystack.length;
+  const needleLength = needle.length;
+  if (needleLength === 0) {
+    return 0;
+  }
+  if (needleLength > haystackLength) {
+    return -1;
+  }
+
+  outer: for (let i = 0; i <= haystackLength - needleLength; i++) {
+    for (let j = 0; j < needleLength; j++) {
+      if (haystack[i + j] !== needle[j]) {
+        continue outer;
+      }
+    }
+    return i;
+  }
+  return -1;
 }
