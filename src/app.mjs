@@ -242,7 +242,7 @@ const rtmrView = {
 
       for (const ev of rtmr.value.events) {
         this.events.innerHTML += `
-<div>
+<div class="field">
   <h3>
     ${ev.name} <span class="log-tag">RTMR${ev.register}</span>
   </h3>

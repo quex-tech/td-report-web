@@ -1,34 +1,57 @@
+:root {
+  --color-bg: #efefef;
+  --color-bg-dark: #373532;
+  --color-text: #373532;
+  --color-error: #cf2e2e;
+  --color-accent-start: #ccff01;
+  --color-accent-end: #bfe136;
+
+  --space-xs: 0.1875rem;
+  --space-sm: 0.625rem;
+  --space-md: 1.25rem;
+  --space-lg: 2.5rem;
+  --space-xl: 3.125rem;
+}
+
 @font-face {
   font-family: "Inter";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2)
+  src: url("https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2")
     format("woff2");
 }
 
 @font-face {
   font-family: "TT Firs Neue";
-  src: url("TT-Firs-Neue.ttf") format("truetype");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+  src: url("TT-Firs-Neue.ttf") format("truetype");
 }
 
-html {
-  margin: 0;
-  padding: 0;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
-
+html,
 body {
   margin: 0;
   padding: 0;
+}
+body {
   font-family: "Inter", sans-serif;
-  background: url("back.png") no-repeat center top #efefef;
-  color: #373532;
+  background: var(--color-bg) url("back.png") no-repeat center top;
+  color: var(--color-text);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0;
 }
 
@@ -55,7 +78,6 @@ h4 {
 a {
   color: currentColor;
 }
-
 a:hover {
   text-decoration: none;
 }
@@ -70,10 +92,9 @@ label {
 input,
 select {
   font-size: 1.125rem;
-  padding-inline: 0.625rem;
-  height: 2.5rem;
+  padding-inline: var(--space-sm);
+  height: var(--space-lg);
   width: 100%;
-  box-sizing: border-box;
   background-color: #fff;
   border: none;
   font-family: inherit;
@@ -89,19 +110,20 @@ select {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding-right: 3.125rem;
-  background: #fff url("arrow.png") no-repeat right 0 center / 2.5rem;
+  background: #fff url("arrow.png") no-repeat right center/2.5rem;
 }
 
 button,
 input[type="file"]::file-selector-button {
-  width: fit-content;
   padding: 0.4375rem 2.0625rem;
   font-family: "TT Firs Neue", sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
-  background: linear-gradient(90deg, #ccff01 0%, #bfe136 100%);
-  color: inherit;
-  text-align: center;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent-start) 0%,
+    var(--color-accent-end) 100%
+  );
   cursor: pointer;
   border: none;
 }
@@ -123,47 +145,63 @@ input[type="number"] {
 }
 
 .error {
-  color: #cf2e2e;
+  color: var(--color-error);
+}
+
+.hint {
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 /* Other */
 
-.section {
+.top-section {
+  padding-inline: var(--space-md);
+}
+
+.heading {
+  padding-block-start: var(--space-xl);
+}
+
+.register-type {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-lg);
+  padding-block: var(--space-md);
 }
 
-.header {
-  padding: 3.125rem 0 0;
-}
-
-.padded {
-  padding: 0 1.25rem;
-}
-
-.container {
-  padding-block: 1.5625rem;
-  display: flex;
-  gap: 2.5rem;
-  align-items: flex-start;
-}
-
-.container-rtmr {
+.register-type__rtmr {
   border-top: 1px solid #546d6b;
-  padding-top: 2.5rem;
+  padding-block-start: var(--space-lg);
+}
+
+.footer {
+  font-size: 0.9rem;
+  padding-block: var(--space-md);
+}
+
+@media screen and (min-width: 768px) {
+  .register-type {
+    flex-direction: row;
+  }
 }
 
 .column {
-  flex: 1 1 0px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: var(--space-lg);
+}
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .log-tag {
-  border: 1px solid #373532;
-  padding: 0.1875rem 0.625rem;
+  border: 1px solid var(--color-text);
+  padding: var(--space-xs) var(--space-sm);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -177,23 +215,21 @@ input[type="number"] {
 /* Hash */
 
 .hash-list {
-  margin: 0;
-  list-style-type: none;
+  list-style: none;
   counter-reset: index -1;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
-
 .hash-list > li {
   display: flex;
-  gap: 1rem;
-  padding-bottom: 0.375rem;
+  gap: var(--space-md);
 }
-
 .hash-list > li::before {
   counter-increment: index;
   content: counter(index);
   font-weight: 700;
-  color: #333;
   display: inline-block;
   width: 1rem;
 }
@@ -201,6 +237,5 @@ input[type="number"] {
 .hash {
   word-break: break-all;
   font-family: monospace;
-  /* width: 24ch; */
   font-size: 0.875rem;
 }
