@@ -2,8 +2,8 @@
 
 ## Launching locally
 
-Serve the files in the `src/` directory with any tool, for example:
+Serve the files in the `docs/` directory with any tool, for example:
 
 ```sh
-python -m http.server -d src/
+python -m http.server -d docs/
 ```
