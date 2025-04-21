@@ -27,7 +27,8 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
-  src: url("TT-Firs-Neue.ttf") format("truetype");
+  src: url("https://quex.tech/wp-content/themes/quex-2025/assets/fonts/TT-Firs-Neue/TT-Firs-Neue.ttf")
+    format("truetype");
 }
 
 *,
@@ -115,7 +116,8 @@ select {
 
 button,
 input[type="file"]::file-selector-button {
-  padding: 0.4375rem 2.0625rem;
+  height: 40px;
+  padding: 0 2rem;
   font-family: "TT Firs Neue", sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
