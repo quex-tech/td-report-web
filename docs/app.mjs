@@ -82,8 +82,8 @@ const hardwareView = {
    */
   render: function (model) {
     if (!model.isCustom) {
-      this.downloadAcpiTables.href = `/acpi/${model.configuration}.bin`;
-      this.downloadLibvirtXml.href = `/acpi/${model.acpiTablesId}.xml`;
+      this.downloadAcpiTables.href = `acpi/${model.configuration}.bin`;
+      this.downloadLibvirtXml.href = `acpi/${model.acpiTablesId}.xml`;
     }
     toggle(this.acpiTablesBlock, model.isCustom);
     toggle(this.downloadHardwareFiles, !model.isCustom);
@@ -116,7 +116,7 @@ const hardwareModel = {
       return await this.acpiTables?.arrayBuffer();
     }
 
-    const response = await fetch(`/acpi/${this.acpiTablesId}.bin`);
+    const response = await fetch(`acpi/${this.acpiTablesId}.bin`);
     if (!response.ok) {
       throw new Error("Could not get QEMU ACPI tables file");
     }
