@@ -1,5 +1,5 @@
 {
-  "name": "tdx-measurement-verify",
+  "name": "@quex/tdx-measurement-verify",
   "version": "1.0.0",
   "description": "TDX measurement verification tool",
   "main": "index.mjs",
