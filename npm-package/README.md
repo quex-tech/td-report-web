@@ -4,6 +4,12 @@ A JS module to reproduce Intel® TDX RTMR and MRTD measurements.
 
 Use online: [verify.quex.tech](https://verify.quex.tech/)
 
+## Installation
+
+```
+npm install @quex/tdx-measurement-verify
+```
+
 ## Example usage
 
 ```js
