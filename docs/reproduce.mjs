@@ -13,7 +13,10 @@
 // limitations under the License.
 
 // @ts-check
-"use strict";
+
+/**
+ * @typedef {Uint8Array<ArrayBuffer>} bytes
+ */
 
 /**
  * @typedef {Object} TrustDomain
@@ -24,15 +27,15 @@
 
 /**
  * @typedef {Object} TdSoftware
- * @property {Uint8Array} kernel
- * @property {Uint8Array} [initrd]
+ * @property {bytes} kernel
+ * @property {bytes} [initrd]
  * @property {string} [cmdline]
  */
 
 /**
  * @typedef {Object} TdHardware
  * @property {number} totalMemoryBytes
- * @property {Uint8Array} acpiTables
+ * @property {bytes} acpiTables
  */
 
 /**
@@ -41,18 +44,18 @@
  * @property {string} type
  * @property {{[key:string]:string}} metadata
  * @property {number} register
- * @property {Uint8Array} digest
+ * @property {bytes} digest
  */
 
 const PAGE_SIZE = 0x1000;
 
 /**
  * @param {TdFirmware} firmware
- * @returns {Promise<Uint8Array>}
+ * @returns {Promise<bytes>}
  */
 export async function reproduceMrtd(firmware) {
   /**
-   * @type {Uint8Array[]}
+   * @type {bytes[]}
    */
   const parts = [];
   for (const section of firmware.tdxMetadataSections) {
@@ -87,7 +90,7 @@ export async function reproduceMrtd(firmware) {
 
 /**
  * @typedef {Object} RtmrResult
- * @property {Uint8Array[]} registers
+ * @property {bytes[]} registers
  * @property {TdEvent[]} events
  */
 
@@ -135,7 +138,7 @@ async function reproduceEvents(td) {
    * @param {string} type
    * @param {number} register
    * @param {{[key:string]:string}} metadata
-   * @param {Uint8Array<ArrayBuffer>} preimage
+   * @param {bytes} preimage
    */
   async function addEvent(name, type, register, metadata, preimage) {
     events.push({
@@ -365,8 +368,8 @@ async function reproduceEvents(td) {
 }
 
 /**
- * @param {Map<string,Uint8Array>} efiVariables
- * @returns {Uint8Array}
+ * @param {Map<string,bytes>} efiVariables
+ * @returns {bytes}
  */
 function getSecureBootVariableValue(efiVariables) {
   if (
@@ -382,8 +385,8 @@ function getSecureBootVariableValue(efiVariables) {
 /**
  * @param {string} typeUuid
  * @param {string} name
- * @param {Uint8Array|undefined} data
- * @returns {Uint8Array}
+ * @param {bytes|undefined} data
+ * @returns {bytes}
  */
 function getDriverConfigVariable(typeUuid, name, data) {
   data = data || new Uint8Array(0);
@@ -396,7 +399,7 @@ function getDriverConfigVariable(typeUuid, name, data) {
 }
 
 /**
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function getUiAppBootOption() {
   return concatBytes([
@@ -422,7 +425,7 @@ function getUiAppBootOption() {
  */
 
 /**
- * @param {Uint8Array} bytes
+ * @param {bytes} bytes
  * @returns {AcpiTable[]}
  */
 function parseAcpiTables(bytes) {
@@ -453,7 +456,7 @@ function parseAcpiTables(bytes) {
 
 /**
  * @param {AcpiTable[]} tables
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function getRsdp(tables) {
   let rsdtOffset = 0;
@@ -476,7 +479,7 @@ function getRsdp(tables) {
 
 /**
  * @param {AcpiTable[]} tables
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function getTableLoader(tables) {
   const commands = [
@@ -569,7 +572,7 @@ function getTableLoader(tables) {
  * @param {string} filename
  * @param {number} align
  * @param {number} zone
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function serializeAllocate(filename, align, zone) {
   const result = new Uint8Array(128);
@@ -586,7 +589,7 @@ function serializeAllocate(filename, align, zone) {
  * @param {string} srcFile
  * @param {number} offset
  * @param {number} size
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function serializeAddPointer(destFile, srcFile, offset, size) {
   const result = new Uint8Array(128);
@@ -604,7 +607,7 @@ function serializeAddPointer(destFile, srcFile, offset, size) {
  * @param {number} offset
  * @param {number} start
  * @param {number} length
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function serializeAddChecksum(filename, offset, start, length) {
   const result = new Uint8Array(128);
@@ -628,7 +631,7 @@ const HOB_END_SIZE = 8;
 /**
  * @param {TdxMetadataSection[]} tdxMetadataSections
  * @param {TdMemoryLayout} memoryLayout
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function getHobHashPreimage(tdxMetadataSections, memoryLayout) {
   let memOffset = 0;
@@ -720,9 +723,9 @@ const AUTH_VARS_GUID = "aaf32c78-947b-439a-a180-2e144ec37792";
 
 /**
  * @typedef {Object} TdFirmware
- * @property {Uint8Array} bytes
+ * @property {bytes} bytes
  * @property {TdxMetadataSection[]} tdxMetadataSections
- * @property {Map<string,Uint8Array>} efiVariables
+ * @property {Map<string,bytes>} efiVariables
  */
 
 /**
@@ -737,7 +740,7 @@ const AUTH_VARS_GUID = "aaf32c78-947b-439a-a180-2e144ec37792";
 
 /**
  *
- * @param {Uint8Array} bytes
+ * @param {bytes} bytes
  * @returns {TdFirmware}
  */
 export function parseFirmware(bytes) {
@@ -749,7 +752,7 @@ export function parseFirmware(bytes) {
 }
 
 /**
- * @param {Uint8Array} firmware
+ * @param {bytes} firmware
  * @returns {TdxMetadataSection[]}
  */
 function getTdxMetadataSections(firmware) {
@@ -765,7 +768,7 @@ function getTdxMetadataSections(firmware) {
 }
 
 /**
- * @param {Uint8Array} metadataTable
+ * @param {bytes} metadataTable
  * @returns {TdxMetadataSection[]}
  */
 function parseTdxMetadataSections(metadataTable) {
@@ -828,7 +831,7 @@ function parseTdxMetadataSections(metadataTable) {
 }
 
 /**
- * @param {Uint8Array} image
+ * @param {bytes} image
  * @returns {number}
  */
 function getTdxMetadataOffset(image) {
@@ -850,8 +853,8 @@ function getTdxMetadataOffset(image) {
 }
 
 /**
- * @param {Uint8Array} bytes  – the raw OVMF.fd bytes
- * @returns {Map<string, Uint8Array>}  – map of EFI var name → its raw data
+ * @param {bytes} bytes
+ * @returns {Map<string, bytes>}
  */
 function parseEfiVariables(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -1028,13 +1031,13 @@ function getMemoryLayout(totalMemoryBytes) {
  * (beyond the headers/sections) excluding the certificate blob.
  * The procedure follows the algorithm used in OVMF for PE/COFF measurement.
  *
- * @param {Uint8Array} bytes
- * @returns {Uint8Array}
+ * @param {bytes} bytes
+ * @returns {bytes}
  */
 function getPeHashPreimage(bytes) {
   const { optionalHeader, sections } = parsePe(bytes);
   /**
-   * @type {Uint8Array[]}
+   * @type {bytes[]}
    */
   const hashParts = [];
 
@@ -1116,8 +1119,8 @@ function getPeHashPreimage(bytes) {
 /**
  * @typedef {Object} PeSection
  * @property {string} name
- * @property {Uint8Array} body Body without zero-padding
- * @property {Uint8Array} rawBody Body with zero-padding
+ * @property {bytes} body Body without zero-padding
+ * @property {bytes} rawBody Body with zero-padding
  */
 
 /**
@@ -1129,7 +1132,7 @@ function getPeHashPreimage(bytes) {
  */
 
 /**
- * @param {Uint8Array} bytes
+ * @param {bytes} bytes
  * @returns {PortableExecutable}
  */
 function parsePe(bytes) {
@@ -1234,7 +1237,7 @@ const BE = false;
 class TextEncoderUtf16Le {
   /**
    * @param {string} str
-   * @returns {Uint8Array}
+   * @returns {bytes}
    */
   encode(str) {
     const buffer = new ArrayBuffer(str.length * 2);
@@ -1252,8 +1255,8 @@ const utf16LeDecoder = new TextDecoder("utf-16le");
 const utf16LeEncoder = new TextEncoderUtf16Le();
 
 /**
- * @param {Uint8Array} bytes
- * @returns {Promise<Uint8Array>}
+ * @param {bytes} bytes
+ * @returns {Promise<bytes>}
  */
 async function sha384(bytes) {
   return new Uint8Array(await crypto.subtle.digest("SHA-384", bytes));
@@ -1261,7 +1264,7 @@ async function sha384(bytes) {
 
 /**
  * @param {string} uuid
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function uuidToBytes(uuid) {
   const parts = uuid.split("-");
@@ -1276,7 +1279,7 @@ function uuidToBytes(uuid) {
 }
 
 /**
- * @param {Uint8Array} bytes
+ * @param {bytes} bytes
  * @returns {string}
  */
 function bytesToUuid(bytes) {
@@ -1296,9 +1299,9 @@ function bytesToUuid(bytes) {
 }
 
 /**
- * @param {Uint8Array[]} byteArrays
+ * @param {bytes[]} byteArrays
  * @param {number=} length
- * @returns {Uint8Array}
+ * @returns {bytes}
  */
 function concatBytes(
   byteArrays,
@@ -1314,7 +1317,7 @@ function concatBytes(
 }
 
 /**
- * @param {Uint8Array} bytes
+ * @param {bytes} bytes
  * @returns {string}
  */
 export function bytesToHex(bytes) {
@@ -1324,8 +1327,8 @@ export function bytesToHex(bytes) {
 }
 
 /**
- * @param {Uint8Array} haystack
- * @param {Uint8Array} needle
+ * @param {bytes} haystack
+ * @param {bytes} needle
  * @returns {number} starting index, or -1 if not found
  */
 function indexOfSubarray(haystack, needle) {

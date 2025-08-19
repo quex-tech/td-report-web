@@ -34,7 +34,7 @@ export default [
       "space-infix-ops": "error",
       "arrow-spacing": ["error", { before: true, after: true }],
       "max-depth": ["warn", 4],
-      "max-params": ["warn", 4],
+      "max-params": ["warn", 5],
     },
   },
 ];
