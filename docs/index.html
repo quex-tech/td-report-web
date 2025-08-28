@@ -9,7 +9,9 @@
   </head>
   <body>
     <header class="top-section">
-      <a href="https://quex.tech" class="logo-link"><img class="logo" src="logo.png" alt="QUEX logo" /></a>
+      <a href="https://quex.tech" class="logo-link"
+        ><img class="logo" src="logo.png" alt="QUEX logo"
+      /></a>
       <div class="heading">
         <h1>TDX measurement verification tool</h1>
       </div>
@@ -40,103 +42,35 @@
           <div class="field">
             <label for="hardware-configuration">Configuration</label>
             <select id="hardware-configuration">
-              <option value="1c-1g-nic" data-ram="1024" data-tables="1c-1g-nic">
-                1 CPU core, 1 GiB RAM, NIC
-              </option>
-              <option value="1c-2g-nic" data-ram="2048" data-tables="1c-nic">
-                1 CPU core, 2 GiB RAM, NIC
-              </option>
-              <option value="2c-2g-nic" data-ram="2048" data-tables="2c-nic">
-                2 CPU cores, 2 GiB RAM, NIC
-              </option>
-              <option value="2c-4g-nic" data-ram="4096" data-tables="2c-nic">
-                2 CPU cores, 4 GiB RAM, NIC
-              </option>
-              <option value="4c-2g-nic" data-ram="2048" data-tables="4c-nic">
-                4 CPU cores, 2 GiB RAM, NIC
-              </option>
-              <option value="4c-4g-nic" data-ram="4096" data-tables="4c-nic">
-                4 CPU cores, 4 GiB RAM, NIC
-              </option>
-              <option value="4c-4g-nic" data-ram="8192" data-tables="4c-nic">
-                4 CPU cores, 8 GiB RAM, NIC
-              </option>
-              <option value="8c-2g-nic" data-ram="2048" data-tables="8c-nic">
-                8 CPU cores, 2 GiB RAM, NIC
-              </option>
-              <option value="8c-4g-nic" data-ram="4096" data-tables="8c-nic">
-                8 CPU cores, 4 GiB RAM, NIC
-              </option>
-              <option value="8c-8g-nic" data-ram="8192" data-tables="8c-nic">
-                8 CPU cores, 8 GiB RAM, NIC
-              </option>
-              <option value="8c-16g-nic" data-ram="16384" data-tables="8c-nic">
-                8 CPU cores, 16 GiB RAM, NIC
-              </option>
-              <option value="16c-2g-nic" data-ram="2048" data-tables="16c-nic">
-                16 CPU cores, 2 GiB RAM, NIC
-              </option>
-              <option value="16c-4g-nic" data-ram="4096" data-tables="16c-nic">
-                16 CPU cores, 4 GiB RAM, NIC
-              </option>
-              <option value="16c-8g-nic" data-ram="8192" data-tables="16c-nic">
-                16 CPU cores, 8 GiB RAM, NIC
-              </option>
-              <option
-                value="16c-16g-nic"
-                data-ram="16384"
-                data-tables="16c-nic"
-              >
-                16 CPU cores, 16 GiB RAM, NIC
-              </option>
-              <option
-                value="16c-32g-nic"
-                data-ram="32768"
-                data-tables="16c-nic"
-              >
-                16 CPU cores, 32 GiB RAM, NIC
-              </option>
+              <option value="default">Default, 1 NIC</option>
               <option value="custom">Custom</option>
             </select>
+          </div>
+
+          <div class="field" id="cpu-field">
+            <label for="cpu">CPU, cores</label>
+            <input type="number" id="cpu" min="1" max="256" value="2" />
+          </div>
+
+          <div class="field" id="ram-field">
+            <label for="ram">RAM, MiB</label>
+            <input type="number" id="ram" min="256" step="256" value="2048" />
           </div>
 
           <div id="download-hardware-files">
             <p>Download:</p>
             <ul>
               <li>
-                <a id="download-acpi-tables" href="acpi/2c-nic.bin" download
+                <a id="download-acpi-tables" href="" download="acpi.bin"
                   >↓ QEMU ACPI tables file</a
                 >
               </li>
               <li>
-                <a id="download-libvirt-xml" href="acpi/2c-nic.xml" download
+                <a id="download-libvirt-xml" href="" download="domain.xml"
                   >↓ Example libvirt domain XML file</a
                 >
               </li>
             </ul>
-          </div>
-
-          <div class="field" id="ram-field" style="display: none">
-            <label for="ram">RAM, MiB</label>
-            <input
-              type="number"
-              id="ram"
-              min="256"
-              step="256"
-              value="2048"
-              list="ram-values"
-            />
-            <datalist id="ram-values">
-              <option value="256"></option>
-              <option value="512"></option>
-              <option value="1024"></option>
-              <option value="2048"></option>
-              <option value="3072"></option>
-              <option value="4096"></option>
-              <option value="8192"></option>
-              <option value="16384"></option>
-              <option value="32768"></option>
-            </datalist>
           </div>
 
           <div class="field" id="acpi-field" style="display: none">
@@ -201,7 +135,14 @@
       </div>
     </section>
     <footer class="footer top-section">
-      <p><a href="https://github.com/quex-tech/td-report-web" target="_blank" rel="noopener">Source code on Github</a></p>
+      <p>
+        <a
+          href="https://github.com/quex-tech/td-report-web"
+          target="_blank"
+          rel="noopener"
+          >Source code on Github</a
+        >
+      </p>
       <p>Tested with:</p>
       <ul>
         <li>

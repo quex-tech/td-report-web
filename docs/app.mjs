@@ -14,6 +14,7 @@
 
 // @ts-check
 
+import { getAcpi } from "./acpi.mjs";
 import {
   parseFirmware,
   reproduceMrtd,
@@ -42,16 +43,20 @@ const firmwareModel = {
 
 /**
  * @typedef {Object} HardwareModel
- * @property {number|undefined} ramMb
+ * @property {number} ramMb
+ * @property {number} cpuCount
  * @property {string} configuration
  * @property {File|undefined} acpiTables
- * @property {string} acpiTablesId
  * @property {boolean} isCustom
  * @property {boolean} isFilled
- * @property {() => Promise<ArrayBuffer|undefined>} getAcpiTables
+ * @property {() => Promise<Uint8Array<ArrayBuffer>|undefined>} getAcpiTables
  */
 
 const hardwareView = {
+  cpu: /** @type {HTMLInputElement} */ (document.getElementById("cpu")),
+  cpuBlock: /** @type {HTMLInputElement} */ (
+    document.getElementById("cpu-field")
+  ),
   ram: /** @type {HTMLInputElement} */ (document.getElementById("ram")),
   ramBlock: /** @type {HTMLInputElement} */ (
     document.getElementById("ram-field")
@@ -82,29 +87,36 @@ const hardwareView = {
    */
   render: function (model) {
     if (!model.isCustom) {
-      this.downloadAcpiTables.href = `acpi/${model.acpiTablesId}.bin`;
-      this.downloadLibvirtXml.href = `acpi/${model.configuration}.xml`;
+      const acpiBlob = new Blob(
+        [getAcpi(model.cpuCount, model.ramMb * 1024 * 1024)],
+        {
+          type: "application/octet-stream",
+        }
+      );
+      this.downloadAcpiTables.href = URL.createObjectURL(acpiBlob);
+      const libvirtXmlBlob = new Blob(
+        [getLibvirtXml(model.cpuCount, model.ramMb)],
+        {
+          type: "application/xml",
+        }
+      );
+      this.downloadLibvirtXml.href = URL.createObjectURL(libvirtXmlBlob);
+    } else {
+      URL.revokeObjectURL(this.downloadAcpiTables.href);
+      URL.revokeObjectURL(this.downloadLibvirtXml.href);
     }
     toggle(this.acpiTablesBlock, model.isCustom);
     toggle(this.downloadHardwareFiles, !model.isCustom);
-    toggle(this.ramBlock, model.isCustom);
+    toggle(this.cpuBlock, !model.isCustom);
   },
 };
 
 /** @type {HardwareModel} */
 const hardwareModel = {
-  ramMb: parseInt(
-    hardwareView.configuration.value === "custom"
-      ? hardwareView.ram.value
-      : hardwareView.selectedConfigurationOption.attributes["data-ram"].value
-  ),
+  cpuCount: parseInt(hardwareView.cpu.value),
+  ramMb: parseInt(hardwareView.ram.value),
   configuration: hardwareView.configuration.value,
   acpiTables: hardwareView.acpiTables.files?.[0],
-  acpiTablesId:
-    hardwareView.configuration.value === "custom"
-      ? "custom"
-      : hardwareView.selectedConfigurationOption.attributes["data-tables"]
-          .value,
   get isCustom() {
     return this.configuration === "custom";
   },
@@ -113,14 +125,12 @@ const hardwareModel = {
   },
   getAcpiTables: async function () {
     if (this.isCustom) {
-      return await this.acpiTables?.arrayBuffer();
+      return this.acpiTables
+        ? new Uint8Array(await this.acpiTables.arrayBuffer())
+        : undefined;
     }
 
-    const response = await fetch(`acpi/${this.acpiTablesId}.bin`);
-    if (!response.ok) {
-      throw new Error("Could not get QEMU ACPI tables file");
-    }
-    return await response.arrayBuffer();
+    return getAcpi(this.cpuCount, this.ramMb * 1024 * 1024);
   },
 };
 
@@ -183,7 +193,7 @@ const softwareModel = {
 
 /**
  * @typedef {Object} MrtdModel
- * @property {Uint8Array|null} value
+ * @property {Uint8Array<ArrayBuffer>|null} value
  * @property {boolean} calculating
  * @property {string} error
  */
@@ -293,28 +303,22 @@ firmwareView.file.addEventListener("change", () => {
   updateRtmr();
 });
 
-hardwareView.ram.addEventListener("change", () => {
-  if (hardwareModel.isCustom) {
-    hardwareModel.ramMb = parseInt(hardwareView.ram.value);
+hardwareView.cpu.addEventListener("change", () => {
+  if (!hardwareModel.isCustom) {
+    hardwareModel.cpuCount = parseInt(hardwareView.cpu.value);
   }
+  render();
+  updateRtmr();
+});
+
+hardwareView.ram.addEventListener("change", () => {
+  hardwareModel.ramMb = parseInt(hardwareView.ram.value);
   render();
   updateRtmr();
 });
 
 hardwareView.configuration.addEventListener("change", () => {
   hardwareModel.configuration = hardwareView.configuration.value;
-  hardwareModel.ramMb = parseInt(
-    hardwareModel.isCustom
-      ? hardwareView.ram.value
-      : hardwareView.configuration.options[
-          hardwareView.configuration.selectedIndex
-        ].attributes["data-ram"].value
-  );
-  hardwareModel.acpiTablesId = hardwareModel.isCustom
-    ? ""
-    : hardwareView.configuration.options[
-        hardwareView.configuration.selectedIndex
-      ].attributes["data-tables"].value;
   render();
   updateRtmr();
 });
@@ -406,6 +410,8 @@ async function getTd() {
   if (
     !firmwareBuffer ||
     !acpi ||
+    !hardwareModel.cpuCount ||
+    hardwareModel.cpuCount < 0 ||
     !hardwareModel.ramMb ||
     hardwareModel.ramMb < 0 ||
     !softwareModel.isFilled
@@ -448,6 +454,69 @@ function render() {
     hardware: hardwareModel,
     software: softwareModel,
   });
+}
+
+/**
+ * @param {number} cpuCount
+ * @param {number} ramMb
+ * @returns {string}
+ */
+function getLibvirtXml(cpuCount, ramMb) {
+  return `<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <name>my-td</name>
+  <memory unit='MiB'>${ramMb}</memory>
+  <memoryBacking>
+    <source type='anonymous'/>
+    <access mode='private'/>
+  </memoryBacking>
+  <vcpu placement='static'>${cpuCount}</vcpu>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <loader>/path/to/OVMF.fd</loader>
+    <kernel>/path/to/ukernel.efi</kernel>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <vmport state='off'/>
+    <ioapic driver='qemu'/>
+  </features>
+  <cpu mode='host-passthrough'>
+    <topology sockets='1' cores='${cpuCount}' threads='1'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='hpet' present='no'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <pm>
+    <suspend-to-mem enabled='no'/>
+    <suspend-to-disk enabled='no'/>
+  </pm>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <interface type='network'>
+      <source network='bridged-network' bridge='brquex0'/>
+      <model type='virtio'/>
+      <address type='pci' bus='0x00' slot='0x01'/>
+    </interface>
+    <controller type='usb' model='none'/>
+    <memballoon model='none'/>
+  </devices>
+  <launchSecurity type='tdx'>
+    <policy>0x10000000</policy>
+    <quoteGenerationService>
+      <SocketAddress type='vsock' cid='2' port='4050'/>
+    </quoteGenerationService>
+  </launchSecurity>
+  <qemu:commandline>
+    <qemu:arg value='-machine'/>
+    <qemu:arg value='pc-q35-8.2,usb=off,vmport=off,kernel_irqchip=split,dump-guest-core=off,memory-backend=pc.ram,confidential-guest-support=lsec0,hpet=off,i8042=off,smbus=off,sata=off'/>
+    <qemu:arg value='-global'/>
+    <qemu:arg value='ICH9-LPC.acpi-pci-hotplug-with-bridge-support=off'/>
+  </qemu:commandline>
+</domain>`;
 }
 
 /**
