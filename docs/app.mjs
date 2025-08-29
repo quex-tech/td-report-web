@@ -43,13 +43,16 @@ const firmwareModel = {
 
 /**
  * @typedef {Object} HardwareModel
- * @property {number} ramMb
- * @property {number} cpuCount
+ * @property {number|null} cpuCount
+ * @property {number|null} ramMb
+ * @property {number|null} ramBytes
+ * @property {number|null} diskCount
  * @property {string} configuration
  * @property {File|undefined} acpiTables
  * @property {boolean} isCustom
  * @property {boolean} isFilled
- * @property {() => Promise<Uint8Array<ArrayBuffer>|undefined>} getAcpiTables
+ * @property {boolean} isValid
+ * @property {() => Promise<Uint8Array<ArrayBuffer>|null>} getAcpiTables
  */
 
 const hardwareView = {
@@ -60,6 +63,10 @@ const hardwareView = {
   ram: /** @type {HTMLInputElement} */ (document.getElementById("ram")),
   ramBlock: /** @type {HTMLInputElement} */ (
     document.getElementById("ram-field")
+  ),
+  disks: /** @type {HTMLInputElement} */ (document.getElementById("disks")),
+  disksBlock: /** @type {HTMLInputElement} */ (
+    document.getElementById("disks-field")
   ),
   configuration: /** @type {HTMLSelectElement} */ (
     document.getElementById("hardware-configuration")
@@ -86,16 +93,23 @@ const hardwareView = {
    * @param {HardwareModel} model
    */
   render: function (model) {
-    if (!model.isCustom) {
-      const acpiBlob = new Blob(
-        [getAcpi(model.cpuCount, model.ramMb * 1024 * 1024)],
-        {
-          type: "application/octet-stream",
-        }
+    if (!model.isCustom && model.isFilled && model.isValid) {
+      const acpiTables = getAcpi(
+        /** @type {number} */ (model.cpuCount),
+        /** @type {number} */ (model.ramBytes),
+        /** @type {number} */ (model.diskCount)
       );
+      const acpiBlob = new Blob([acpiTables], {
+        type: "application/octet-stream",
+      });
       this.downloadAcpiTables.href = URL.createObjectURL(acpiBlob);
       const libvirtXmlBlob = new Blob(
-        [getLibvirtXml(model.cpuCount, model.ramMb)],
+        [
+          getLibvirtXml(
+            /** @type {number} */ (model.cpuCount),
+            /** @type {number} */ (model.ramMb)
+          ),
+        ],
         {
           type: "application/xml",
         }
@@ -106,31 +120,68 @@ const hardwareView = {
       URL.revokeObjectURL(this.downloadLibvirtXml.href);
     }
     toggle(this.acpiTablesBlock, model.isCustom);
-    toggle(this.downloadHardwareFiles, !model.isCustom);
+    toggle(
+      this.downloadHardwareFiles,
+      !model.isCustom && model.isFilled && model.isValid
+    );
     toggle(this.cpuBlock, !model.isCustom);
+    toggle(this.disksBlock, !model.isCustom);
   },
 };
 
 /** @type {HardwareModel} */
 const hardwareModel = {
-  cpuCount: parseInt(hardwareView.cpu.value),
-  ramMb: parseInt(hardwareView.ram.value),
+  cpuCount: isNaN(parseInt(hardwareView.cpu.value))
+    ? null
+    : parseInt(hardwareView.cpu.value),
+  ramMb: isNaN(parseInt(hardwareView.ram.value))
+    ? null
+    : parseInt(hardwareView.ram.value),
+  get ramBytes() {
+    return this.ramMb === null ? null : this.ramMb * 1024 * 1024;
+  },
+  diskCount: isNaN(parseInt(hardwareView.disks.value))
+    ? null
+    : parseInt(hardwareView.disks.value),
   configuration: hardwareView.configuration.value,
   acpiTables: hardwareView.acpiTables.files?.[0],
   get isCustom() {
     return this.configuration === "custom";
   },
   get isFilled() {
-    return Boolean((!this.isCustom || this.acpiTables) && this.ramMb);
+    return (
+      this.ramMb !== null &&
+      (this.isCustom
+        ? Boolean(this.acpiTables)
+        : this.cpuCount !== null && this.diskCount !== null)
+    );
+  },
+  get isValid() {
+    return (
+      (this.ramMb === null || this.ramMb >= 256) &&
+      (this.isCustom ||
+        ((this.cpuCount === null ||
+          (this.cpuCount > 0 && this.cpuCount <= 256)) &&
+          (this.diskCount === null ||
+            (this.diskCount >= 0 && this.diskCount <= 8))))
+    );
   },
   getAcpiTables: async function () {
     if (this.isCustom) {
       return this.acpiTables
         ? new Uint8Array(await this.acpiTables.arrayBuffer())
-        : undefined;
+        : null;
     }
 
-    return getAcpi(this.cpuCount, this.ramMb * 1024 * 1024);
+    if (!this.isFilled || !this.isValid) {
+      return null;
+    }
+
+    return getAcpi(
+      /** @type {number} */ (this.cpuCount),
+      /** @type {number} */ (this.ramBytes),
+      /** @type {number} */ (this.diskCount)
+    );
   },
 };
 
@@ -279,7 +330,10 @@ const rtmrView = {
       }
     }
     const isInputMissing =
-      !software.isFilled || !firmware.file || !hardware.isFilled;
+      !software.isFilled ||
+      !firmware.file ||
+      !hardware.isFilled ||
+      !hardware.isValid;
 
     this.error.innerText = rtmr.error;
 
@@ -304,15 +358,22 @@ firmwareView.file.addEventListener("change", () => {
 });
 
 hardwareView.cpu.addEventListener("change", () => {
-  if (!hardwareModel.isCustom) {
-    hardwareModel.cpuCount = parseInt(hardwareView.cpu.value);
-  }
+  const cpuCount = parseInt(hardwareView.cpu.value);
+  hardwareModel.cpuCount = isNaN(cpuCount) ? null : cpuCount;
   render();
   updateRtmr();
 });
 
 hardwareView.ram.addEventListener("change", () => {
-  hardwareModel.ramMb = parseInt(hardwareView.ram.value);
+  const ramMb = parseInt(hardwareView.ram.value);
+  hardwareModel.ramMb = isNaN(ramMb) ? null : ramMb;
+  render();
+  updateRtmr();
+});
+
+hardwareView.disks.addEventListener("change", () => {
+  const diskCount = parseInt(hardwareView.disks.value);
+  hardwareModel.diskCount = isNaN(diskCount) ? null : diskCount;
   render();
   updateRtmr();
 });
@@ -386,6 +447,8 @@ async function updateRtmr() {
     const td = await getTd();
     if (td) {
       rtmrModel.value = await reproduceRtmr(td);
+    } else {
+      rtmrModel.value = null;
     }
   } catch (e) {
     rtmrModel.error = e.message;
@@ -399,6 +462,14 @@ async function updateRtmr() {
  * @returns {Promise<import("./reproduce.mjs").TrustDomain|null>}
  */
 async function getTd() {
+  if (
+    !hardwareModel.isFilled ||
+    !hardwareModel.isValid ||
+    !softwareModel.isFilled
+  ) {
+    return null;
+  }
+
   const [firmwareBuffer, acpi, uki, kernel, initrd] = await Promise.all([
     firmwareModel.file?.arrayBuffer(),
     hardwareModel.getAcpiTables(),
@@ -407,15 +478,7 @@ async function getTd() {
     softwareModel.initrd?.arrayBuffer(),
   ]);
 
-  if (
-    !firmwareBuffer ||
-    !acpi ||
-    !hardwareModel.cpuCount ||
-    hardwareModel.cpuCount < 0 ||
-    !hardwareModel.ramMb ||
-    hardwareModel.ramMb < 0 ||
-    !softwareModel.isFilled
-  ) {
+  if (!firmwareBuffer || !acpi) {
     return null;
   }
 
@@ -424,7 +487,7 @@ async function getTd() {
 
   return {
     hardware: {
-      totalMemoryBytes: hardwareModel.ramMb * 1024 * 1024,
+      totalMemoryBytes: /** @type {number} */ (hardwareModel.ramBytes),
       acpiTables: new Uint8Array(acpi),
     },
     firmware,

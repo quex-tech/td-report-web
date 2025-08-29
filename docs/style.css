@@ -129,6 +129,10 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+input:invalid {
+  border: 2px solid var(--color-error);
+}
+
 .field {
   display: flex;
   flex-direction: column;

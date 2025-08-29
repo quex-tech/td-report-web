@@ -43,12 +43,22 @@ import {
 /**
  * @param {number} cpuCount
  * @param {number} memoryBytes
+ * @param {number} diskCount
  * @returns {bytes}
  */
-export function getAcpi(cpuCount, memoryBytes) {
+export function getAcpi(cpuCount, memoryBytes, diskCount) {
+  if (cpuCount < 1 || cpuCount > 256) {
+    throw new Error("cpuCount must be 1..256");
+  }
+  if (memoryBytes <= 0) {
+    throw new Error("memoryBytes must be > 0");
+  }
+  if (diskCount < 0 || diskCount > 8) {
+    throw new Error("diskCount must be 0..8");
+  }
   const result = new Uint8Array(128 * 1024);
   const facs = getFacs();
-  const dsdt = getDsdt(cpuCount, memoryBytes);
+  const dsdt = getDsdt(cpuCount, memoryBytes, diskCount);
   const fadt = getFadt(cpuCount);
   const madt = getMadt(cpuCount);
   const mcfg = getMcfg();
@@ -86,14 +96,15 @@ function getFacs() {
 /**
  * @param {number} cpuCount
  * @param {number} memoryBytes
+ * @param {number} diskCount
  * @returns {bytes}
  */
-function getDsdt(cpuCount, memoryBytes) {
+function getDsdt(cpuCount, memoryBytes, diskCount) {
   const result = concatBytes([
     hexToBytes(
       "44534454ac1f00000100424f434853204258504320202020010000004258504301000000"
     ),
-    getDsdtAml(cpuCount, memoryBytes),
+    getDsdtAml(cpuCount, memoryBytes, diskCount),
   ]);
   const view = new DataView(result.buffer);
   view.setUint32(4, result.length, LE);
@@ -103,9 +114,10 @@ function getDsdt(cpuCount, memoryBytes) {
 /**
  * @param {number} cpuCount
  * @param {number} memoryBytes
+ * @param {number} diskCount
  * @returns {bytes}
  */
-function getDsdtAml(cpuCount, memoryBytes) {
+function getDsdtAml(cpuCount, memoryBytes, diskCount) {
   return concatBytes([
     defineScope("\\", [
       hexToBytes(
@@ -272,9 +284,13 @@ function getDsdtAml(cpuCount, memoryBytes) {
               true,
               0x0000000000000000n,
               0x0000380000000000n,
-              0x00003807ffffffffn,
+              0x00003807ffffffffn +
+                (diskCount > 0 ? 0x4000n : 0n) +
+                0x800000000n * BigInt(diskCount),
               0x0000000000000000n,
-              0x0000000800000000n
+              0x0000000800000000n +
+                (diskCount > 0 ? 0x4000n : 0n) +
+                0x800000000n * BigInt(diskCount)
             ),
             new Uint8Array([0x79, 0x00]),
           ])
@@ -296,6 +312,17 @@ function getDsdtAml(cpuCount, memoryBytes) {
       defineScope("PCI0", [
         defineDevice("S00", [defineName("_ADR", makeInteger(0))]),
         defineDevice("S08", [defineName("_ADR", makeInteger(0x00010000))]),
+        ...[...Array(diskCount).keys()].map((id) =>
+          defineDevice(getDiskDeviceName(id), [
+            defineName("_ADR", makeInteger(getDiskAddress(id))),
+            defineDevice("S00", [defineName("_ADR", makeInteger(0))]),
+          ])
+        ),
+        diskCount > 0
+          ? defineDevice(getDiskDeviceName(diskCount), [
+              defineName("_ADR", makeInteger(getDiskAddress(diskCount))),
+            ])
+          : new Uint8Array(0),
         defineDevice("SF8", [
           hexToBytes(
             "085f4144520c00001f005b8050495251020a600a0c1043045c5f53425f5b813a2f03504349305346385f50495251015052514108505251420850525143085052514408002050525145085052514608505251470850525148085b82255254435f085f4849440c41d00b00085f43525311100a0d47017000700001082200017900"
@@ -312,6 +339,22 @@ function getDsdtAml(cpuCount, memoryBytes) {
  */
 function getDsdtProcessorName(id) {
   return `C${id.toString(16).toUpperCase().padStart(3, "0")}`;
+}
+
+/**
+ * @param {number} id
+ * @returns {number}
+ */
+function getDiskAddress(id) {
+  return 0x00020000 + Math.floor(id / 8) * 0x00010000 + (id % 8);
+}
+
+/**
+ * @param {number} id
+ * @returns {string}
+ */
+function getDiskDeviceName(id) {
+  return `S${(id + 0x10).toString(16).toUpperCase().padStart(2, "0")}`;
 }
 
 /**

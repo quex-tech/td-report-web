@@ -48,13 +48,18 @@
           </div>
 
           <div class="field" id="cpu-field">
-            <label for="cpu">CPU, cores</label>
+            <label for="cpu">CPU, cores <small>(max: 256)</small></label>
             <input type="number" id="cpu" min="1" max="256" value="2" />
           </div>
 
           <div class="field" id="ram-field">
-            <label for="ram">RAM, MiB</label>
+            <label for="ram">RAM, MiB <small>(min: 256)</small></label>
             <input type="number" id="ram" min="256" step="256" value="2048" />
+          </div>
+
+          <div class="field" id="disks-field">
+            <label for="disks">Disk Count <small>(max: 8)</small></label>
+            <input type="number" id="disks" min="0" max="8" value="0" />
           </div>
 
           <div id="download-hardware-files">
