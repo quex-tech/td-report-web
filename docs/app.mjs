@@ -107,7 +107,8 @@ const hardwareView = {
         [
           getLibvirtXml(
             /** @type {number} */ (model.cpuCount),
-            /** @type {number} */ (model.ramMb)
+            /** @type {number} */ (model.ramMb),
+            /** @type {number} */ (model.diskCount)
           ),
         ],
         {
@@ -522,9 +523,10 @@ function render() {
 /**
  * @param {number} cpuCount
  * @param {number} ramMb
+ * @param {number} diskCount
  * @returns {string}
  */
-function getLibvirtXml(cpuCount, ramMb) {
+function getLibvirtXml(cpuCount, ramMb, diskCount) {
   return `<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   <name>my-td</name>
   <memory unit='MiB'>${ramMb}</memory>
@@ -566,7 +568,16 @@ function getLibvirtXml(cpuCount, ramMb) {
     </interface>
     <controller type='usb' model='none'/>
     <memballoon model='none'/>
-  </devices>
+${[...new Array(diskCount).keys()]
+  .map(
+    (i) => `    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/path/to/${getDiskDeviceName(i)}.qcow2'/>
+      <target dev='${getDiskDeviceName(i)}' bus='virtio'/>
+    </disk>
+`
+  )
+  .join("")}  </devices>
   <launchSecurity type='tdx'>
     <policy>0x10000000</policy>
     <quoteGenerationService>
@@ -580,6 +591,14 @@ function getLibvirtXml(cpuCount, ramMb) {
     <qemu:arg value='ICH9-LPC.acpi-pci-hotplug-with-bridge-support=off'/>
   </qemu:commandline>
 </domain>`;
+}
+
+/**
+ * @param {number} id
+ * @returns {string}
+ */
+function getDiskDeviceName(id) {
+  return `vd${String.fromCharCode(0x61 + id)}`;
 }
 
 /**
