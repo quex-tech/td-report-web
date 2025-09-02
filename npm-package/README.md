@@ -17,19 +17,19 @@ import {
   parseFirmware,
   reproduceMrtd,
   reproduceRtmr,
-} from 'tdx-measurement-verify';
+} from "tdx-measurement-verify";
 
 const td = {
   hardware: {
-    totalMemoryBytes: 2*1024*1024*1024,
+    totalMemoryBytes: 2 * 1024 * 1024 * 1024,
     acpiTables: acpiTablesBytes, // contents of /sys/firmware/qemu_fw_cfg/by_name/etc/acpi/tables/raw
   },
-  parseFirmware(firmwareBytes), // OVMF.fd
+  firmware: parseFirmware(firmwareBytes), // OVMF.fd
   software: {
-    kernel: ukiBytes
+    kernel: ukiBytes,
   },
 };
 
 const mrtd = await reproduceMrtd(td.firmware);
-const { rtmrRegisters, rtmrEvents } = await reproduceRtmr(td);
+const { registers, events } = await reproduceRtmr(td);
 ```
