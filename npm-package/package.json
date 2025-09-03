@@ -1,6 +1,6 @@
 {
   "name": "@quex/tdx-measurement-verify",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TDX measurement verification tool",
   "main": "index.mjs",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/quex-tech/td-report-web.git"
   },
   "scripts": {
-    "pack": "cp ../docs/reproduce.mjs index.mjs && npm pack"
+  "pack": "cp ../docs/reproduce.mjs . && cp ../docs/acpi.mjs . && cp ../docs/aml.mjs . && npm pack"
   },
   "author": {
     "email": "team@quex.tech",
